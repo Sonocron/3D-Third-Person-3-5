@@ -20,6 +20,16 @@ public class PlayerController : MonoBehaviour
     [Tooltip("How fast the movement speed is in-/decreasing")]
     [SerializeField] private float speedChangeRate = 10f;
 
+    [SerializeField] private float rotationSpeed = 10f;
+
+    [Header("Slope Movement")] 
+    
+    [SerializeField] private float pullDownForce = 5f;
+
+    [SerializeField] private LayerMask raycastMask;
+
+    [SerializeField] private float raycastLength = 0.5f;
+    
     [Header("Camera")] 
     
     [SerializeField] private Transform cameraTarget;
@@ -53,6 +63,8 @@ public class PlayerController : MonoBehaviour
     private Vector2 moveInput;
     private Vector2 lookInput;
 
+    private Quaternion characterTargetRotation = Quaternion.identity;
+    
     private Vector2 cameraRotation;
     
     private Vector3 lastMovement;
@@ -66,6 +78,10 @@ public class PlayerController : MonoBehaviour
         inputActions = new GameInput();
         moveAction = inputActions.Player.Move;
         lookAction = inputActions.Player.Look;
+
+        characterTargetRotation = transform.rotation;
+        cameraRotation = cameraTarget.rotation.eulerAngles;
+
     }
 
     private void OnEnable()
@@ -114,7 +130,21 @@ public class PlayerController : MonoBehaviour
         if (moveInput != Vector2.zero)
         {
             Vector3 inputDirection = new Vector3(moveInput.x, 0, moveInput.y).normalized;
-            transform.rotation = Quaternion.LookRotation(inputDirection);
+
+            Vector3 worldInputDirection = cameraTarget.TransformDirection(inputDirection);
+            worldInputDirection.y = 0;
+            
+            characterTargetRotation = Quaternion.LookRotation(worldInputDirection);
+        }
+
+        if (Quaternion.Angle(transform.rotation, characterTargetRotation) > 0.1f)
+        {
+            transform.rotation =
+                Quaternion.Slerp(transform.rotation, characterTargetRotation, rotationSpeed * Time.deltaTime);
+        }
+        else
+        {
+            transform.rotation = characterTargetRotation;
         }
     }
     
@@ -134,8 +164,20 @@ public class PlayerController : MonoBehaviour
             currentSpeed = targetSpeed;
         }
 
-        Vector3 movement = transform.forward * currentSpeed;
+        Vector3 targetDirection = characterTargetRotation * Vector3.forward;
+        
+        Vector3 movement = targetDirection * currentSpeed;
         characterController.SimpleMove(movement);
+
+        if (Physics.Raycast(transform.position + Vector3.up * 0.01f, Vector3.down,
+                out RaycastHit hit, raycastLength, raycastMask, QueryTriggerInteraction.Ignore))
+        {
+            if (Vector3.ProjectOnPlane(movement, hit.normal).y < 0)
+            {
+                characterController.Move(Vector3.down * (pullDownForce * Time.deltaTime));
+            }
+        }
+        
         lastMovement = movement;
     }
 
@@ -147,11 +189,62 @@ public class PlayerController : MonoBehaviour
     {
         if (lookInput != Vector2.zero)
         {
-            cameraRotation.x += lookInput.y * cameraVerticalSpeed;
+            bool isMouseLook = IsMouseLook(); 
+                            //   ist mein bool true ? true : false
+            float deltaTimeMultiplier = isMouseLook ? 1 : Time.deltaTime;
+
+            float sensitivity = isMouseLook ? mouseCameraSensitivity : controllerCameraSensitivity;
+            
+            /*       
+            if (isMouseLook)
+            {
+                sensitivity = mouseCameraSensitivity;
+            }
+            else
+            {
+                sensitivity = controllerCameraSensitivity;
+            }
+            */
+
+            lookInput *= deltaTimeMultiplier * sensitivity;
+            
+            cameraRotation.x += lookInput.y * cameraVerticalSpeed * (!isMouseLook && invertY ? -1 : 1);
             cameraRotation.y += lookInput.x * cameraHorizontalSpeed;
+
+            cameraRotation.x = NormalizeAngle(cameraRotation.x);
+            cameraRotation.y = NormalizeAngle(cameraRotation.y);
+
+            cameraRotation.x = Mathf.Clamp(cameraRotation.x, verticalCameraRotationMin, verticalCameraRotationMax);
         }
         
         cameraTarget.rotation = Quaternion.Euler(cameraRotation.x, cameraRotation.y, 0);
+    }
+    
+    private float NormalizeAngle(float angle)
+    {
+        angle %= 360;
+
+        if (angle < 0)
+        {
+            angle += 360;
+        }
+
+        if (angle > 180)
+        {
+            angle -= 360;
+        }
+
+        return angle;
+    }
+
+    private bool IsMouseLook()
+    {
+        if (lookAction.activeControl == null)
+        {
+            return true;
+        }
+
+        return lookAction.activeControl.device.name == "Mouse";
     }
 
     #endregion

@@ -43,7 +43,7 @@ namespace UnityEngine.InputSystem
                     ""type"": ""Value"",
                     ""id"": ""6b444451-8a00-4d00-a97e-f47457f736a8"",
                     ""expectedControlType"": ""Vector2"",
-                    ""processors"": """",
+                    ""processors"": ""InvertVector2(invertX=false)"",
                     ""interactions"": """",
                     ""initialStateCheck"": true
                 },
@@ -63,7 +63,7 @@ namespace UnityEngine.InputSystem
                     ""id"": ""978bfe49-cc26-4a3d-ab7b-7d7a29327403"",
                     ""path"": ""<Gamepad>/leftStick"",
                     ""interactions"": """",
-                    ""processors"": """",
+                    ""processors"": ""StickDeadzone"",
                     ""groups"": "";Gamepad"",
                     ""action"": ""Move"",
                     ""isComposite"": false,
@@ -195,7 +195,7 @@ namespace UnityEngine.InputSystem
                     ""id"": ""c1f7a91b-d0fd-4a62-997e-7fb9b69bf235"",
                     ""path"": ""<Gamepad>/rightStick"",
                     ""interactions"": """",
-                    ""processors"": """",
+                    ""processors"": ""StickDeadzone"",
                     ""groups"": "";Gamepad"",
                     ""action"": ""Look"",
                     ""isComposite"": false,
@@ -206,7 +206,7 @@ namespace UnityEngine.InputSystem
                     ""id"": ""8c8e490b-c610-4785-884f-f04217b23ca4"",
                     ""path"": ""<Pointer>/delta"",
                     ""interactions"": """",
-                    ""processors"": """",
+                    ""processors"": ""ScaleVector2(x=0.0005,y=0.0005)"",
                     ""groups"": "";Keyboard&Mouse;Touch"",
                     ""action"": ""Look"",
                     ""isComposite"": false,
@@ -824,39 +824,6 @@ namespace UnityEngine.InputSystem
                     ""isOR"": false
                 }
             ]
-        },
-        {
-            ""name"": ""Touch"",
-            ""bindingGroup"": ""Touch"",
-            ""devices"": [
-                {
-                    ""devicePath"": ""<Touchscreen>"",
-                    ""isOptional"": false,
-                    ""isOR"": false
-                }
-            ]
-        },
-        {
-            ""name"": ""Joystick"",
-            ""bindingGroup"": ""Joystick"",
-            ""devices"": [
-                {
-                    ""devicePath"": ""<Joystick>"",
-                    ""isOptional"": false,
-                    ""isOR"": false
-                }
-            ]
-        },
-        {
-            ""name"": ""XR"",
-            ""bindingGroup"": ""XR"",
-            ""devices"": [
-                {
-                    ""devicePath"": ""<XRController>"",
-                    ""isOptional"": false,
-                    ""isOR"": false
-                }
-            ]
         }
     ]
 }");
@@ -1136,33 +1103,6 @@ namespace UnityEngine.InputSystem
             {
                 if (m_GamepadSchemeIndex == -1) m_GamepadSchemeIndex = asset.FindControlSchemeIndex("Gamepad");
                 return asset.controlSchemes[m_GamepadSchemeIndex];
-            }
-        }
-        private int m_TouchSchemeIndex = -1;
-        public InputControlScheme TouchScheme
-        {
-            get
-            {
-                if (m_TouchSchemeIndex == -1) m_TouchSchemeIndex = asset.FindControlSchemeIndex("Touch");
-                return asset.controlSchemes[m_TouchSchemeIndex];
-            }
-        }
-        private int m_JoystickSchemeIndex = -1;
-        public InputControlScheme JoystickScheme
-        {
-            get
-            {
-                if (m_JoystickSchemeIndex == -1) m_JoystickSchemeIndex = asset.FindControlSchemeIndex("Joystick");
-                return asset.controlSchemes[m_JoystickSchemeIndex];
-            }
-        }
-        private int m_XRSchemeIndex = -1;
-        public InputControlScheme XRScheme
-        {
-            get
-            {
-                if (m_XRSchemeIndex == -1) m_XRSchemeIndex = asset.FindControlSchemeIndex("XR");
-                return asset.controlSchemes[m_XRSchemeIndex];
             }
         }
         public interface IPlayerActions
