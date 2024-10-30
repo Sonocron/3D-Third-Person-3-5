@@ -2,20 +2,29 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Serialization;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+    private static readonly int Hash_MovementSpeed = Animator.StringToHash("MovementSpeed");
+    private static readonly int Hash_Grounded = Animator.StringToHash("Grounded");
+    private static readonly int Hash_Crouch = Animator.StringToHash("Crouch");
+
     #region Inspector
 
+    [FormerlySerializedAs("movementSpeed")]
     [Header("Movement")]
     
     [Min(0)]
     [Tooltip("The maximum speed of the player in uu/s")]
-    [SerializeField] private float movementSpeed = 5f;
-
+    [SerializeField] private float crouchSpeed;
+    [SerializeField] private float walkSpeed;
+    [SerializeField] private float runSpeed;
+    
     [Min(0)]
     [Tooltip("How fast the movement speed is in-/decreasing")]
     [SerializeField] private float speedChangeRate = 10f;
@@ -42,6 +51,11 @@ public class PlayerController : MonoBehaviour
 
     [SerializeField] private float cameraVerticalSpeed = 130f;
 
+    [Header("Animations")] 
+    [SerializeField] private Animator animator;
+
+    [SerializeField] private float coyoteTime;
+    
     [Header("Mouse Settings")] 
     
     [SerializeField] private float mouseCameraSensitivity = 1f;
@@ -59,6 +73,8 @@ public class PlayerController : MonoBehaviour
     private GameInput inputActions;
     private InputAction moveAction;
     private InputAction lookAction;
+    private InputAction runAction;
+    private InputAction crouchAction;
     
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -68,25 +84,40 @@ public class PlayerController : MonoBehaviour
     private Vector2 cameraRotation;
     
     private Vector3 lastMovement;
+
+    private bool isGrounded;
+    private bool isRunning;
+    private bool isCrouching;
+    private float airTime;
+    private float currentSpeed = 3f;
     #endregion
     
     #region Event Functions
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
-        
+           
         inputActions = new GameInput();
         moveAction = inputActions.Player.Move;
         lookAction = inputActions.Player.Look;
+        runAction = inputActions.Player.ShiftRun;
+        crouchAction = inputActions.Player.Crouch;
 
         characterTargetRotation = transform.rotation;
         cameraRotation = cameraTarget.rotation.eulerAngles;
 
+        currentSpeed = walkSpeed;
     }
 
     private void OnEnable()
     {
         inputActions.Enable();
+
+        runAction.performed += Run;
+        runAction.canceled += Run;
+        
+        crouchAction.performed += Crouch;
+        crouchAction.canceled += Crouch;
     }
 
     private void Update()
@@ -95,6 +126,9 @@ public class PlayerController : MonoBehaviour
 
         Rotate(moveInput);
         Move(moveInput);
+
+        GroundCheck();
+        UpdateAnimator();
     }
 
     private void LateUpdate()
@@ -105,6 +139,11 @@ public class PlayerController : MonoBehaviour
     private void OnDisable()
     {
         inputActions.Disable();
+        runAction.performed -= Run;
+        runAction.canceled -= Run;
+        
+        crouchAction.performed -= Crouch;
+        crouchAction.canceled -= Crouch;
     }
 
     private void OnDestroy()
@@ -119,6 +158,18 @@ public class PlayerController : MonoBehaviour
     {
         moveInput = moveAction.ReadValue<Vector2>();
         lookInput = lookAction.ReadValue<Vector2>();
+    }
+
+    private void Run(InputAction.CallbackContext ctx)
+    {
+        isRunning = ctx.performed;
+        currentSpeed = isRunning ? runSpeed : walkSpeed;
+    }
+    
+    private void Crouch(InputAction.CallbackContext ctx)
+    {
+        isCrouching = ctx.performed;
+        currentSpeed = isCrouching ? crouchSpeed : isRunning ? runSpeed : walkSpeed;
     }
 
     #endregion
@@ -150,7 +201,7 @@ public class PlayerController : MonoBehaviour
     
     private void Move(Vector2 moveInput)
     {
-        float targetSpeed = moveInput == Vector2.zero ? 0 : movementSpeed * moveInput.magnitude;
+        float targetSpeed = moveInput == Vector2.zero ? 0 : this.currentSpeed * moveInput.magnitude;
         Vector3 currentVelocity = lastMovement;
         currentVelocity.y = 0;
         float currentSpeed = currentVelocity.magnitude;
@@ -183,6 +234,39 @@ public class PlayerController : MonoBehaviour
 
     #endregion
 
+    #region GroundCheck
+
+    private void GroundCheck()
+    {
+        if (characterController.isGrounded)
+        {
+            airTime = 0;
+        }
+        else
+        {
+            airTime += Time.deltaTime;
+        }
+
+        isGrounded = airTime < coyoteTime;
+    }
+
+    #endregion    
+    
+    #region Animator
+
+    private void UpdateAnimator()
+    {
+        Vector3 velocity = lastMovement;
+        velocity.y = 0;
+        float speed = velocity.magnitude;
+        
+        animator.SetFloat(Hash_MovementSpeed, speed);
+        animator.SetBool(Hash_Grounded, isGrounded);
+        animator.SetBool(Hash_Crouch, isCrouching);
+    }
+
+    #endregion
+    
     #region Camera
 
     private void RotateCamera(Vector2 lookInput)
