@@ -13,7 +13,13 @@ public class PlayerController : MonoBehaviour
     private static readonly int Hash_MovementSpeed = Animator.StringToHash("MovementSpeed");
     private static readonly int Hash_Grounded = Animator.StringToHash("Grounded");
     private static readonly int Hash_Crouch = Animator.StringToHash("Crouch");
+    private static readonly int Hash_Jumped = Animator.StringToHash("Jumped");
+    private static readonly int Hash_ActionId = Animator.StringToHash("ActionId");
+    private static readonly int Hash_ActionTrigger = Animator.StringToHash("ActionTrigger");
 
+    public static Action EnableAbilities;
+    public static Action DisableAbilities;
+    
     #region Inspector
 
     [FormerlySerializedAs("movementSpeed")]
@@ -21,9 +27,10 @@ public class PlayerController : MonoBehaviour
     
     [Min(0)]
     [Tooltip("The maximum speed of the player in uu/s")]
-    [SerializeField] private float crouchSpeed;
-    [SerializeField] private float walkSpeed;
-    [SerializeField] private float runSpeed;
+    [SerializeField] private float crouchSpeed = 1.5f;
+    [SerializeField] private float walkSpeed = 3f;
+    [SerializeField] private float runSpeed = 5f;
+    [SerializeField] private float jumpHeight = 0.5f;
     
     [Min(0)]
     [Tooltip("How fast the movement speed is in-/decreasing")]
@@ -70,11 +77,12 @@ public class PlayerController : MonoBehaviour
     #region Private Variables
     private CharacterController characterController;
     
-    private GameInput inputActions;
+    public GameInput inputActions;
     private InputAction moveAction;
     private InputAction lookAction;
     private InputAction runAction;
     private InputAction crouchAction;
+    private InputAction jumpAction;
     
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -90,18 +98,27 @@ public class PlayerController : MonoBehaviour
     private bool isCrouching;
     private float airTime;
     private float currentSpeed = 3f;
+
+    private float gravity = -19.62f;
+    private Vector3 velocity;
+    
+    //Animator Layer
+    private int upperBody_AnimLayer;
+    
     #endregion
     
     #region Event Functions
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
-           
+        upperBody_AnimLayer = animator.GetLayerIndex("Upper Body");
+
         inputActions = new GameInput();
         moveAction = inputActions.Player.Move;
         lookAction = inputActions.Player.Look;
         runAction = inputActions.Player.ShiftRun;
         crouchAction = inputActions.Player.Crouch;
+        jumpAction = inputActions.Player.Jump;
 
         characterTargetRotation = transform.rotation;
         cameraRotation = cameraTarget.rotation.eulerAngles;
@@ -118,6 +135,10 @@ public class PlayerController : MonoBehaviour
         
         crouchAction.performed += Crouch;
         crouchAction.canceled += Crouch;
+        
+        jumpAction.performed += Jump;
+        
+        EnableAbilities?.Invoke();
     }
 
     private void Update()
@@ -144,6 +165,10 @@ public class PlayerController : MonoBehaviour
         
         crouchAction.performed -= Crouch;
         crouchAction.canceled -= Crouch;
+        
+        jumpAction.performed -= Jump;
+        
+        DisableAbilities?.Invoke();
     }
 
     private void OnDestroy()
@@ -170,6 +195,15 @@ public class PlayerController : MonoBehaviour
     {
         isCrouching = ctx.performed;
         currentSpeed = isCrouching ? crouchSpeed : isRunning ? runSpeed : walkSpeed;
+    }
+    
+    private void Jump(InputAction.CallbackContext ctx)
+    {
+        if (isGrounded)
+        {
+            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            animator.SetBool(Hash_Jumped, true);
+        }
     }
 
     #endregion
@@ -218,7 +252,15 @@ public class PlayerController : MonoBehaviour
         Vector3 targetDirection = characterTargetRotation * Vector3.forward;
         
         Vector3 movement = targetDirection * currentSpeed;
-        characterController.SimpleMove(movement);
+
+        if (!isGrounded)
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
+
+        movement.y = velocity.y;
+
+        characterController.Move(movement * Time.deltaTime);
 
         if (Physics.Raycast(transform.position + Vector3.up * 0.01f, Vector3.down,
                 out RaycastHit hit, raycastLength, raycastMask, QueryTriggerInteraction.Ignore))
@@ -263,6 +305,22 @@ public class PlayerController : MonoBehaviour
         animator.SetFloat(Hash_MovementSpeed, speed);
         animator.SetBool(Hash_Grounded, isGrounded);
         animator.SetBool(Hash_Crouch, isCrouching);
+    }
+
+    public void EndJump()
+    {
+        animator.SetBool(Hash_Jumped, false);
+    }
+
+    public void SetAnimator_UppderBody_LayerWeight(float weight)
+    {
+        animator.SetLayerWeight(upperBody_AnimLayer, weight);
+    }
+    
+    public void ActionTrigger(int id)
+    {
+        animator.SetTrigger(Hash_ActionTrigger);
+        animator.SetInteger(Hash_ActionId, id);
     }
 
     #endregion
@@ -333,3 +391,4 @@ public class PlayerController : MonoBehaviour
 
     #endregion
 }
+
