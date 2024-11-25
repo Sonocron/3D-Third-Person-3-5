@@ -91,6 +91,15 @@ namespace UnityEngine.InputSystem
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""WeaponDrawn"",
+                    ""type"": ""Button"",
+                    ""id"": ""d9913918-16ca-42bf-a3f9-3af91b92d687"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -344,6 +353,17 @@ namespace UnityEngine.InputSystem
                     ""processors"": """",
                     ""groups"": "";Gamepad"",
                     ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ceae54e4-6843-4c51-a25d-25c3f1993a67"",
+                    ""path"": ""<Keyboard>/x"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""WeaponDrawn"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -806,6 +826,7 @@ namespace UnityEngine.InputSystem
             m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
             m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
             m_Player_Interact = m_Player.FindAction("Interact", throwIfNotFound: true);
+            m_Player_WeaponDrawn = m_Player.FindAction("WeaponDrawn", throwIfNotFound: true);
             // UI
             m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
             m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -892,6 +913,7 @@ namespace UnityEngine.InputSystem
         private readonly InputAction m_Player_Crouch;
         private readonly InputAction m_Player_Jump;
         private readonly InputAction m_Player_Interact;
+        private readonly InputAction m_Player_WeaponDrawn;
         public struct PlayerActions
         {
             private @GameInput m_Wrapper;
@@ -903,6 +925,7 @@ namespace UnityEngine.InputSystem
             public InputAction @Crouch => m_Wrapper.m_Player_Crouch;
             public InputAction @Jump => m_Wrapper.m_Player_Jump;
             public InputAction @Interact => m_Wrapper.m_Player_Interact;
+            public InputAction @WeaponDrawn => m_Wrapper.m_Player_WeaponDrawn;
             public InputActionMap Get() { return m_Wrapper.m_Player; }
             public void Enable() { Get().Enable(); }
             public void Disable() { Get().Disable(); }
@@ -933,6 +956,9 @@ namespace UnityEngine.InputSystem
                 @Interact.started += instance.OnInteract;
                 @Interact.performed += instance.OnInteract;
                 @Interact.canceled += instance.OnInteract;
+                @WeaponDrawn.started += instance.OnWeaponDrawn;
+                @WeaponDrawn.performed += instance.OnWeaponDrawn;
+                @WeaponDrawn.canceled += instance.OnWeaponDrawn;
             }
 
             private void UnregisterCallbacks(IPlayerActions instance)
@@ -958,6 +984,9 @@ namespace UnityEngine.InputSystem
                 @Interact.started -= instance.OnInteract;
                 @Interact.performed -= instance.OnInteract;
                 @Interact.canceled -= instance.OnInteract;
+                @WeaponDrawn.started -= instance.OnWeaponDrawn;
+                @WeaponDrawn.performed -= instance.OnWeaponDrawn;
+                @WeaponDrawn.canceled -= instance.OnWeaponDrawn;
             }
 
             public void RemoveCallbacks(IPlayerActions instance)
@@ -1120,6 +1149,7 @@ namespace UnityEngine.InputSystem
             void OnCrouch(InputAction.CallbackContext context);
             void OnJump(InputAction.CallbackContext context);
             void OnInteract(InputAction.CallbackContext context);
+            void OnWeaponDrawn(InputAction.CallbackContext context);
         }
         public interface IUIActions
         {
