@@ -227,11 +227,11 @@ public class PlayerController : MonoBehaviour
 
         Vector3 movement = targetDirection * targetSpeed;
         
-        Vector3 velocity = rb.velocity;
+        Vector3 velocity = rb.linearVelocity;
         velocity.x = movement.x;
         velocity.z = movement.z;
         
-        rb.velocity = velocity;
+        rb.linearVelocity = velocity;
         
 
         if (Physics.Raycast(transform.position + Vector3.up * 0.01f, Vector3.down, out RaycastHit hit,
