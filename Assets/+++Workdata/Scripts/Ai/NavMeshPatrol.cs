@@ -77,7 +77,7 @@ public class NavMeshPatrol : MonoBehaviour
     {
         navMeshAgent.isStopped = true;
     }
-
+    
     public void ResumePatrol()
     {
         navMeshAgent.isStopped = false;
