@@ -198,14 +198,12 @@ public class PlayerControllerCharakterController : MonoBehaviour
     private void ShiftInput(InputAction.CallbackContext ctx)
     {
         isRunning = ctx.performed;
-
         currentSpeed = isRunning ? runSpeed : walkSpeed;
     }
     
     private void CrouchInput(InputAction.CallbackContext ctx)
     {
         isCrouched = ctx.performed;
-
         currentSpeed = isCrouched ? crouchSpeed : walkSpeed;
     }
 
